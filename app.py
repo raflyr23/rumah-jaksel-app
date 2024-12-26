@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -20,7 +19,22 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     data = pd.read_csv("data/DATA RUMAH JAKSEL.csv")
+    # Add category classification
+    data['KATEGORI'] = pd.cut(
+        data['HARGA'],
+        bins=[0, 1e9, 5e9, float('inf')],
+        labels=['Murah', 'Sedang', 'Mahal']
+    )
     return data.dropna()
+
+# Function to get price category
+def get_price_category(price):
+    if price <= 1e9:
+        return 'Murah'
+    elif price <= 5e9:
+        return 'Sedang'
+    else:
+        return 'Mahal'
 
 # Function to create KNN regression model
 def create_knn_regression_model(X_train, X_test, y_train, y_test, n_neighbors=5):
@@ -56,7 +70,7 @@ if page == "Home":
     dan memprediksi harga rumah berdasarkan berbagai fitur.
     """)
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.subheader("Dataset Overview")
@@ -67,21 +81,39 @@ if page == "Home":
         st.subheader("Quick Statistics")
         st.write("Ringkasan statistik harga rumah:")
         st.dataframe(df['HARGA'].describe())
+    
+    with col3:
+        st.subheader("Distribusi Kategori")
+        category_counts = df['KATEGORI'].value_counts()
+        st.write("Jumlah rumah per kategori:")
+        st.dataframe(category_counts)
 
 # Data Analysis Page
 elif page == "Data Analysis":
     st.title("📊 Analisis Data")
     
-    # Data preview
+    # Data preview with categories
     st.subheader("Preview Dataset")
-    st.dataframe(df.head())
+    preview_df = df[['HARGA', 'LB', 'LT', 'KT', 'KM', 'GRS', 'KATEGORI']].head()
+    st.dataframe(preview_df)
     
     # Distribution plots
-    st.subheader("Distribusi Harga Rumah")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.histplot(data=df, x='HARGA', bins=30)
-    plt.title("Distribusi Harga Rumah")
-    st.pyplot(fig)
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Distribusi Harga Rumah")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.histplot(data=df, x='HARGA', bins=30)
+        plt.title("Distribusi Harga Rumah")
+        st.pyplot(fig)
+    
+    with col2:
+        st.subheader("Distribusi Kategori Harga")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.countplot(data=df, x='KATEGORI', order=['Murah', 'Sedang', 'Mahal'])
+        plt.title("Distribusi Kategori Harga")
+        plt.xticks(rotation=45)
+        st.pyplot(fig)
     
     # Correlation analysis
     st.subheader("Correlation Matrix")
@@ -123,8 +155,21 @@ elif page == "Price Prediction":
         
         # Make prediction
         prediction = model.predict(input_scaled)[0]
+        category = get_price_category(prediction)
         
-        st.success(f"Prediksi Harga Rumah: Rp {prediction:,.2f}")
+        # Display results
+        st.success(f"""
+        Prediksi Harga Rumah: Rp {prediction:,.2f}
+        Kategori Harga: {category}
+        """)
+        
+        # Show description of category
+        category_desc = {
+            'Murah': 'Harga di bawah 1 Miliar Rupiah',
+            'Sedang': 'Harga antara 1-5 Miliar Rupiah',
+            'Mahal': 'Harga di atas 5 Miliar Rupiah'
+        }
+        st.info(f"Deskripsi Kategori: {category_desc[category]}")
 
 # Model Performance Page
 elif page == "Model Performance":
@@ -143,8 +188,15 @@ elif page == "Model Performance":
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
     
+    # Convert predictions to categories
+    y_test_cat = pd.cut(y_test, bins=[0, 1e9, 5e9, float('inf')], labels=['Murah', 'Sedang', 'Mahal'])
+    y_pred_cat = pd.cut(y_pred, bins=[0, 1e9, 5e9, float('inf')], labels=['Murah', 'Sedang', 'Mahal'])
+    
+    # Calculate category prediction accuracy
+    cat_accuracy = accuracy_score(y_test_cat, y_pred_cat)
+    
     # Display metrics
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.metric("Mean Squared Error", f"{mse:,.2f}")
@@ -152,12 +204,27 @@ elif page == "Model Performance":
     with col2:
         st.metric("R² Score", f"{r2:.4f}")
     
+    with col3:
+        st.metric("Category Accuracy", f"{cat_accuracy:.2%}")
+    
+    # Display confusion matrix for categories
+    st.subheader("Confusion Matrix (Categories)")
+    cm = confusion_matrix(y_test_cat, y_pred_cat)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=['Murah', 'Sedang', 'Mahal'],
+                yticklabels=['Murah', 'Sedang', 'Mahal'])
+    plt.title("Confusion Matrix for Price Categories")
+    plt.xlabel("Predicted Category")
+    plt.ylabel("Actual Category")
+    st.pyplot(fig)
+    
     # Actual vs Predicted Plot
     st.subheader("Actual vs Predicted Values")
     fig, ax = plt.subplots(figsize=(10, 6))
-    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.scatter(y_test, y_pred, alpha=0.5, c=pd.Categorical(y_test_cat).codes, cmap='viridis')
     plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
     plt.xlabel("Actual Prices")
     plt.ylabel("Predicted Prices")
-    plt.title("Actual vs Predicted House Prices")
+    plt.title("Actual vs Predicted House Prices (Colored by Category)")
     st.pyplot(fig)
