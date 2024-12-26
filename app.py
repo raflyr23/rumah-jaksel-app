@@ -8,18 +8,54 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, classification_report, confusion_matrix
 
-# Set page config
+# Custom styling
 st.set_page_config(
-    page_title="Rumah Jaksel Analysis",
+    page_title="Analisis Rumah Jakarta Selatan",
     page_icon="🏠",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# Custom CSS
+st.markdown("""
+    <style>
+        .main > div {
+            padding: 2rem 3rem;
+        }
+        .stButton>button {
+            width: 100%;
+            background-color: #FF4B4B;
+            color: white;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .stButton>button:hover {
+            background-color: #FF3333;
+        }
+        .stat-box {
+            background-color: #21212b;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+        h1, h2, h3 {
+            color: #FF4B4B;
+        }
+        .stAlert {
+            background-color: rgba(255, 75, 75, 0.1);
+            border-left-color: #FF4B4B;
+        }
+        .sidebar .sidebar-content {
+            background-color: #21212b;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Function to load and prepare data
 @st.cache_data
 def load_data():
     data = pd.read_csv("data/DATA RUMAH JAKSEL.csv")
-    # Add category classification
     data['KATEGORI'] = pd.cut(
         data['HARGA'],
         bins=[0, 1e9, 5e9, float('inf')],
@@ -27,14 +63,18 @@ def load_data():
     )
     return data.dropna()
 
-# Function to get price category
+# Function to format currency
+def format_currency(value):
+    return f"Rp {value:,.0f}"
+
+# Function to get price category with emoji
 def get_price_category(price):
     if price <= 1e9:
-        return 'Murah'
+        return '💚 Murah'
     elif price <= 5e9:
-        return 'Sedang'
+        return '💛 Sedang'
     else:
-        return 'Mahal'
+        return '❤️ Mahal'
 
 # Function to create KNN regression model
 def create_knn_regression_model(X_train, X_test, y_train, y_test, n_neighbors=5):
@@ -47,99 +87,160 @@ def create_knn_regression_model(X_train, X_test, y_train, y_test, n_neighbors=5)
     
     return model, scaler, X_train_scaled, X_test_scaled
 
-# Sidebar navigation
-st.sidebar.title("Navigation")
-page = st.sidebar.selectbox(
-    "Select a page",
-    ["Home", "Data Analysis", "Price Prediction", "Model Performance"]
-)
+# Sidebar styling and navigation
+with st.sidebar:
+    st.title("🏠 Navigation")
+    st.markdown("---")
+    page = st.radio(
+        "Select Page",
+        ["Home", "Data Analysis", "Price Prediction", "Model Performance"],
+        format_func=lambda x: f"📍 {x}"
+    )
+    st.markdown("---")
+    st.markdown("""
+        <div style='text-align: center; padding: 1rem;'>
+            <h4>About</h4>
+            <p>Aplikasi analisis harga rumah Jakarta Selatan menggunakan algoritma KNN</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 # Load data
 try:
     df = load_data()
 except FileNotFoundError:
-    st.error("Please make sure the data file 'DATA RUMAH JAKSEL.csv' is in the same directory as this script.")
+    st.error("❌ Error: File 'DATA RUMAH JAKSEL.csv' tidak ditemukan!")
     st.stop()
 
 # Home Page
 if page == "Home":
     st.title("🏠 Analisis Harga Rumah Jakarta Selatan")
-    st.write("""
-    Selamat datang di aplikasi analisis harga rumah Jakarta Selatan. 
-    Aplikasi ini menggunakan algoritma K-Nearest Neighbors untuk menganalisis 
-    dan memprediksi harga rumah berdasarkan berbagai fitur.
-    """)
+    st.markdown("---")
     
+    # Welcome message with card-like styling
+    st.markdown("""
+        <div style='background-color: #21212b; padding: 2rem; border-radius: 0.5rem; margin-bottom: 2rem;'>
+            <h3 style='margin-top: 0;'>👋 Selamat Datang!</h3>
+            <p>Aplikasi ini membantu Anda menganalisis dan memprediksi harga rumah di Jakarta Selatan 
+            menggunakan algoritma K-Nearest Neighbors (KNN).</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Key metrics in columns
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.subheader("Dataset Overview")
-        st.write(f"Total data points: {len(df)}")
-        st.write(f"Features available: {', '.join(df.columns.tolist())}")
+        st.markdown("""
+            <div class='stat-box'>
+                <h4>📊 Total Data</h4>
+                <h2>{:,}</h2>
+                <p>properti</p>
+            </div>
+        """.format(len(df)), unsafe_allow_html=True)
         
     with col2:
-        st.subheader("Quick Statistics")
-        st.write("Ringkasan statistik harga rumah:")
-        st.dataframe(df['HARGA'].describe())
-    
+        avg_price = df['HARGA'].mean()
+        st.markdown("""
+            <div class='stat-box'>
+                <h4>💰 Rata-rata Harga</h4>
+                <h2>{}</h2>
+                <p>rupiah</p>
+            </div>
+        """.format(format_currency(avg_price)), unsafe_allow_html=True)
+        
     with col3:
-        st.subheader("Distribusi Kategori")
-        category_counts = df['KATEGORI'].value_counts()
-        st.write("Jumlah rumah per kategori:")
-        st.dataframe(category_counts)
+        most_common_category = df['KATEGORI'].mode()[0]
+        st.markdown("""
+            <div class='stat-box'>
+                <h4>🏷️ Kategori Terbanyak</h4>
+                <h2>{}</h2>
+                <p>properti</p>
+            </div>
+        """.format(most_common_category), unsafe_allow_html=True)
 
 # Data Analysis Page
 elif page == "Data Analysis":
     st.title("📊 Analisis Data")
+    st.markdown("---")
     
-    # Data preview with categories
-    st.subheader("Preview Dataset")
-    preview_df = df[['HARGA', 'LB', 'LT', 'KT', 'KM', 'GRS', 'KATEGORI']].head()
-    st.dataframe(preview_df)
+    # Interactive data explorer
+    st.subheader("🔍 Eksplorasi Data")
     
-    # Distribution plots
-    col1, col2 = st.columns(2)
+    # Add tabs for different views
+    tab1, tab2, tab3 = st.tabs(["Preview Data", "Statistik", "Visualisasi"])
     
-    with col1:
-        st.subheader("Distribusi Harga Rumah")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.histplot(data=df, x='HARGA', bins=30)
-        plt.title("Distribusi Harga Rumah")
+    with tab1:
+        st.dataframe(
+            df[['HARGA', 'LB', 'LT', 'KT', 'KM', 'GRS', 'KATEGORI']].style.format({
+                'HARGA': format_currency
+            }),
+            use_container_width=True
+        )
+    
+    with tab2:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("##### 📈 Statistik Harga")
+            stats_df = df['HARGA'].describe()
+            stats_df = pd.DataFrame(stats_df).style.format(format_currency)
+            st.dataframe(stats_df, use_container_width=True)
+            
+        with col2:
+            st.markdown("##### 📊 Distribusi Kategori")
+            category_counts = df['KATEGORI'].value_counts()
+            st.bar_chart(category_counts)
+    
+    with tab3:
+        # Enhanced visualizations
+        st.markdown("##### 📈 Visualisasi Data")
+        
+        # Correlation heatmap with improved styling
+        fig, ax = plt.subplots(figsize=(10, 8))
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        corr_matrix = df[numeric_cols].corr()
+        
+        sns.heatmap(
+            corr_matrix,
+            annot=True,
+            cmap='RdYlBu',
+            center=0,
+            fmt='.2f',
+            square=True,
+            linewidths=0.5,
+            cbar_kws={"shrink": .5}
+        )
+        
+        plt.title("Correlation Matrix", pad=20)
         st.pyplot(fig)
-    
-    with col2:
-        st.subheader("Distribusi Kategori Harga")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.countplot(data=df, x='KATEGORI', order=['Murah', 'Sedang', 'Mahal'])
-        plt.title("Distribusi Kategori Harga")
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
-    
-    # Correlation analysis
-    st.subheader("Correlation Matrix")
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    corr_matrix = df[numeric_cols].corr()
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0)
-    st.pyplot(fig)
 
 # Price Prediction Page
 elif page == "Price Prediction":
     st.title("💰 Prediksi Harga Rumah")
+    st.markdown("---")
     
-    # Feature input
-    st.subheader("Masukkan Karakteristik Rumah")
-    
+    # Create two columns for input
     col1, col2 = st.columns(2)
     
     with col1:
-        lb = st.number_input("Luas Bangunan (m²)", min_value=0)
-        lt = st.number_input("Luas Tanah (m²)", min_value=0)
-        kt = st.number_input("Jumlah Kamar Tidur", min_value=0)
+        st.markdown("""
+            <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem;'>
+                <h4>📐 Dimensi Properti</h4>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        lb = st.number_input("Luas Bangunan (m²)", min_value=0, value=100)
+        lt = st.number_input("Luas Tanah (m²)", min_value=0, value=120)
     
     with col2:
-        km = st.number_input("Jumlah Kamar Mandi", min_value=0)
-        grs = st.number_input("Jumlah Garasi", min_value=0)
+        st.markdown("""
+            <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem;'>
+                <h4>🏠 Fasilitas</h4>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        kt = st.number_input("Jumlah Kamar Tidur", min_value=0, value=3)
+        km = st.number_input("Jumlah Kamar Mandi", min_value=0, value=2)
+        grs = st.number_input("Jumlah Garasi", min_value=0, value=1)
     
     # Prepare model
     X = df[["LB", "LT", "KT", "KM", "GRS"]]
@@ -148,83 +249,76 @@ elif page == "Price Prediction":
     
     model, scaler, _, _ = create_knn_regression_model(X_train, X_test, y_train, y_test)
     
-    if st.button("Prediksi Harga"):
-        # Prepare input data
-        input_data = np.array([[lb, lt, kt, km, grs]])
-        input_scaled = scaler.transform(input_data)
-        
-        # Make prediction
-        prediction = model.predict(input_scaled)[0]
-        category = get_price_category(prediction)
-        
-        # Display results
-        st.success(f"""
-        Prediksi Harga Rumah: Rp {prediction:,.2f}
-        Kategori Harga: {category}
-        """)
-        
-        # Show description of category
-        category_desc = {
-            'Murah': 'Harga di bawah 1 Miliar Rupiah',
-            'Sedang': 'Harga antara 1-5 Miliar Rupiah',
-            'Mahal': 'Harga di atas 5 Miliar Rupiah'
-        }
-        st.info(f"Deskripsi Kategori: {category_desc[category]}")
+    st.markdown("---")
+    
+    if st.button("🎯 Prediksi Harga"):
+        # Show loading spinner
+        with st.spinner('Calculating prediction...'):
+            input_data = np.array([[lb, lt, kt, km, grs]])
+            input_scaled = scaler.transform(input_data)
+            prediction = model.predict(input_scaled)[0]
+            category = get_price_category(prediction)
+            
+            # Display results in an attractive format
+            st.markdown("""
+                <div style='background-color: #21212b; padding: 2rem; border-radius: 0.5rem; text-align: center;'>
+                    <h3 style='color: #FF4B4B;'>Hasil Prediksi</h3>
+                    <h2>{}</h2>
+                    <h4>{}</h4>
+                </div>
+            """.format(format_currency(prediction), category), unsafe_allow_html=True)
 
 # Model Performance Page
 elif page == "Model Performance":
     st.title("📈 Performa Model")
+    st.markdown("---")
     
     # Prepare data and model
     X = df[["LB", "LT", "KT", "KM", "GRS"]]
     y = df["HARGA"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    # Model training and evaluation
     model, scaler, X_train_scaled, X_test_scaled = create_knn_regression_model(X_train, X_test, y_train, y_test)
     y_pred = model.predict(X_test_scaled)
     
     # Calculate metrics
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
+    rmse = np.sqrt(mse)
     
-    # Convert predictions to categories
-    y_test_cat = pd.cut(y_test, bins=[0, 1e9, 5e9, float('inf')], labels=['Murah', 'Sedang', 'Mahal'])
-    y_pred_cat = pd.cut(y_pred, bins=[0, 1e9, 5e9, float('inf')], labels=['Murah', 'Sedang', 'Mahal'])
-    
-    # Calculate category prediction accuracy
-    cat_accuracy = accuracy_score(y_test_cat, y_pred_cat)
-    
-    # Display metrics
+    # Display metrics in an attractive grid
     col1, col2, col3 = st.columns(3)
     
-    with col1:
-        st.metric("Mean Squared Error", f"{mse:,.2f}")
+    metrics = [
+        ("Mean Squared Error", mse, "📉"),
+        ("R² Score", r2, "📊"),
+        ("Root Mean Squared Error", rmse, "📈")
+    ]
     
-    with col2:
-        st.metric("R² Score", f"{r2:.4f}")
+    for col, (metric_name, value, emoji) in zip([col1, col2, col3], metrics):
+        with col:
+            st.markdown(f"""
+                <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
+                    <h4>{emoji} {metric_name}</h4>
+                    <h2>{value:.4f}</h2>
+                </div>
+            """, unsafe_allow_html=True)
     
-    with col3:
-        st.metric("Category Accuracy", f"{cat_accuracy:.2%}")
+    st.markdown("---")
     
-    # Display confusion matrix for categories
-    st.subheader("Confusion Matrix (Categories)")
-    cm = confusion_matrix(y_test_cat, y_pred_cat)
-    fig, ax = plt.subplots(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=['Murah', 'Sedang', 'Mahal'],
-                yticklabels=['Murah', 'Sedang', 'Mahal'])
-    plt.title("Confusion Matrix for Price Categories")
-    plt.xlabel("Predicted Category")
-    plt.ylabel("Actual Category")
-    st.pyplot(fig)
+    # Enhanced visualization of actual vs predicted values
+    st.subheader("📊 Actual vs Predicted Values")
     
-    # Actual vs Predicted Plot
-    st.subheader("Actual vs Predicted Values")
     fig, ax = plt.subplots(figsize=(10, 6))
-    plt.scatter(y_test, y_pred, alpha=0.5, c=pd.Categorical(y_test_cat).codes, cmap='viridis')
-    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+    plt.scatter(y_test, y_pred, alpha=0.5, c='#FF4B4B')
+    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], '--', color='gray')
+    
     plt.xlabel("Actual Prices")
     plt.ylabel("Predicted Prices")
-    plt.title("Actual vs Predicted House Prices (Colored by Category)")
+    plt.title("Actual vs Predicted House Prices")
+    
+    # Add grid and style
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
     st.pyplot(fig)
