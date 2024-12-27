@@ -34,7 +34,7 @@ st.markdown("""
             background-color: #FF3333;
         }
         .stat-box {
-            background-color: #21212b;
+           
             border-radius: 0.5rem;
             padding: 1rem;
             margin: 0.5rem 0;
@@ -47,7 +47,7 @@ st.markdown("""
             border-left-color: #FF4B4B;
         }
         .sidebar .sidebar-content {
-            background-color: #21212b;
+            background-color: #f0f2f6;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -118,7 +118,7 @@ if page == "Home":
     
     # Welcome message with card-like styling
     st.markdown("""
-        <div style='background-color: #21212b; padding: 2rem; border-radius: 0.5rem; margin-bottom: 2rem;'>
+        <div style= padding: 2rem; border-radius: 0.5rem; margin-bottom: 2rem;'>
             <h3 style='margin-top: 0;'>👋 Selamat Datang!</h3>
             <p>Aplikasi ini membantu Anda menganalisis dan memprediksi harga rumah di Jakarta Selatan 
             menggunakan algoritma K-Nearest Neighbors (KNN).</p>
@@ -223,7 +223,7 @@ elif page == "Price Prediction":
     
     with col1:
         st.markdown("""
-            <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem;'>
+            <div style= padding: 1rem; border-radius: 0.5rem;'>
                 <h4>📐 Dimensi Properti</h4>
             </div>
         """, unsafe_allow_html=True)
@@ -233,7 +233,7 @@ elif page == "Price Prediction":
     
     with col2:
         st.markdown("""
-            <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem;'>
+            <div style= padding: 1rem; border-radius: 0.5rem;'>
                 <h4>🏠 Fasilitas</h4>
             </div>
         """, unsafe_allow_html=True)
@@ -261,7 +261,7 @@ elif page == "Price Prediction":
             
             # Display results in an attractive format
             st.markdown("""
-                <div style='background-color: #21212b; padding: 2rem; border-radius: 0.5rem; text-align: center;'>
+                <div style= padding: 2rem; border-radius: 0.5rem; text-align: center;'>
                     <h3 style='color: #FF4B4B;'>Hasil Prediksi</h3>
                     <h2>{}</h2>
                     <h4>{}</h4>
@@ -298,11 +298,11 @@ elif page == "Model Performance":
     for col, (metric_name, value, emoji) in zip([col1, col2, col3], metrics):
         with col:
             st.markdown(f"""
-                <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
-                    <h4>{emoji} {metric_name}</h4>
-                    <h2>{value:.4f}</h2>
-                </div>
-            """, unsafe_allow_html=True)
+            <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
+                <h4>{emoji} {metric_name}</h4>
+                <h2>{value}</h2>
+            </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -310,7 +310,7 @@ elif page == "Model Performance":
     st.subheader("📊 Actual vs Predicted Values")
     
     fig, ax = plt.subplots(figsize=(10, 6))
-    plt.scatter(y_test, y_pred, alpha=0.5, c='#FF4B4B')
+    plt.scatter(y_test, y_pred, alpha=0.6, c='#FF4B4B')
     plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], '--', color='gray')
     
     plt.xlabel("Actual Prices")
