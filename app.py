@@ -300,7 +300,7 @@ elif page == "Model Performance":
             st.markdown(f"""
                 <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
                     <h4>{emoji} {metric_name}</h4>
-                    <h2>{value:.4f}</h2>
+                    <h2>{value}</h2>
                 </div>
             """, unsafe_allow_html=True)
     
