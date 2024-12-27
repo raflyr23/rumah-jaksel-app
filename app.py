@@ -295,14 +295,14 @@ elif page == "Model Performance":
         ("Root Mean Squared Error", rmse, "📈")
     ]
     
-    for col, (metric_name, value, emoji) in zip([col1, col2, col3], metrics):
+   for col, (metric_name, value, emoji) in zip([col1, col2, col3], metrics):
         with col:
             st.markdown(f"""
-                <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
-                    <h4>{emoji} {metric_name}</h4>
-                    <h2>{value}</h2>
-                </div>
-            """, unsafe_allow_html=True)
+            <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
+                <h4>{emoji} {metric_name}</h4>
+                <h2>{value}</h2>
+            </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
