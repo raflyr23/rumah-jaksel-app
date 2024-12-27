@@ -295,7 +295,7 @@ elif page == "Model Performance":
         ("Root Mean Squared Error", rmse, "📈")
     ]
     
-    for col, (metric_name, value, emoji) in zip([col1, col2, col3], metrics):
+   for col, (metric_name, value, emoji) in zip([col1, col2, col3], metrics):
         with col:
             st.markdown(f"""
             <div style='background-color: #21212b; padding: 1rem; border-radius: 0.5rem; text-align: center;'>
